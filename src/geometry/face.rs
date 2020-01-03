@@ -5,7 +5,7 @@ pub struct FaceIndex {
 }
 
 impl FaceIndex {
-    pub fn unset() -> FaceIndex {
+    pub const fn unset() -> FaceIndex {
         FaceIndex { index: UNSET_VALUE}
     }
 

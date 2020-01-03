@@ -1,3 +1,5 @@
+use std::f64;
+
 pub struct Point{
     pub x: f64,
     pub y: f64,
@@ -10,6 +12,14 @@ impl Point {
             x: 0.0,
             y: 0.0,
             z: 0.0,
+        }
+    }
+
+    pub const fn unset() -> Point {
+        Point{
+            x: f64::MIN,
+            y: f64::MIN,
+            z: f64::MIN
         }
     }
 }

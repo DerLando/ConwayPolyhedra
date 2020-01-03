@@ -6,7 +6,7 @@ pub struct HalfEdgeIndex {
 }
 
 impl HalfEdgeIndex {
-    pub fn unset() -> HalfEdgeIndex {
+    pub const fn unset() -> HalfEdgeIndex {
         HalfEdgeIndex { index: UNSET_VALUE}
     }
 
