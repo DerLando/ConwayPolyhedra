@@ -2,7 +2,7 @@ use super::constants::{UNSET_VALUE};
 use super::{MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct FaceIndex {
     pub index: u32
 }
@@ -45,10 +45,22 @@ impl IndexMut<FaceIndex> for FaceCollection {
     }
 }
 
-impl FaceCollection {
-    pub fn new() -> FaceCollection {
+impl MeshPartCollection<Face> for FaceCollection {
+    fn new() -> FaceCollection {
         FaceCollection {
             faces: Vec::new()
         }
     }
+
+    fn len(&self) -> usize {
+        self.faces.len()
+    }
+
+    fn add(&mut self, face: Face) -> usize {
+        self.faces.push(face);
+        self.len() - 1
+    }
+}
+
+impl FaceCollection {
 }

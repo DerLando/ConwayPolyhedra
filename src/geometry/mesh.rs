@@ -1,4 +1,5 @@
 use super::{*};
+use super::constants::{UNSET_VALUE};
 
 pub struct Mesh {
     vertices: VertexCollection,
@@ -51,5 +52,59 @@ impl Mesh {
 
         self.add_half_edge(e1);
         self.add_half_edge(e2);
+    }
+
+    pub fn find_half_edge_index(&self, start: VertexIndex, end: VertexIndex) -> Option<HalfEdgeIndex> {
+        let halfedge_index = self.vertices[start].outgoing_half_edge;
+
+        let result = self.edges.vertex_circulator(halfedge_index);
+        match result {
+            None => return Option::None,
+            Some(circulator) => {
+                for index in circulator {
+                    if end == self.edges.edge_pair(&index).unwrap().start_vertex {
+                        return Some(index);
+                    }
+                }
+                return Option::None
+            }
+        };
+    }
+}
+
+// All things related to faces
+impl Mesh {
+    pub fn face_count(&self) -> usize {
+        self.faces.len()
+    }
+
+    pub fn add_face(&mut self, face: Face) -> usize {
+        self.faces.add(face)
+    }
+
+    pub fn add_face_by_indices(&mut self, indices:Vec<VertexIndex>) -> usize {
+        let n = indices.len();
+        let unset = UNSET_VALUE as usize;
+
+        // Check for degenerate
+        if n < 3 {
+            return unset;
+        }
+
+        // test if vertices are valid
+        let v_count = self.vertex_count();
+        for index in indices {
+            if index.index >= v_count as u32 {
+                panic!("Vertex index out of range!");
+            }
+            let outgoing_halfedge_index = self.vertices[index].outgoing_half_edge;
+            if (!outgoing_halfedge_index.is_unset()) && (!self.edges[outgoing_halfedge_index].adjacent_face.is_unset()){
+                return unset;
+            }
+        }
+
+
+
+        return unset;
     }
 }

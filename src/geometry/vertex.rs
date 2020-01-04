@@ -2,7 +2,7 @@ use super::constants::{UNSET_VALUE};
 use super::{HalfEdgeIndex, Point, MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct VertexIndex {
     pub index: u32,
 }

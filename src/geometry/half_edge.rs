@@ -2,7 +2,7 @@ use super::constants::{UNSET_VALUE};
 use super::{VertexIndex, FaceIndex, MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct HalfEdgeIndex {
     pub index: u32,
 }
@@ -111,5 +111,69 @@ impl HalfEdgeCollection {
                 Option::Some(&self[pair_index])
             }
         }
+    }
+
+    pub fn end_vertex_index(&self, index: &HalfEdgeIndex) -> Option<VertexIndex> {
+        let pair = self.edge_pair(index);
+        match pair {
+            None => None,
+            Some(edge) => Option::Some(edge.start_vertex)
+        }
+    }
+
+    pub fn vertex_circulator(&self, index: HalfEdgeIndex) -> Option<Vec<HalfEdgeIndex>> {
+        if index.index >= self.len() as u32 {
+            return Option::None;
+        }
+
+        let mut early_exit = false;
+        let mut cur_edge_index = index;
+        let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
+        for i in 0..100 {
+            cur_edge_index = self[HalfEdgeCollection::edge_pair_index(&cur_edge_index)].next_edge;
+            if cur_edge_index == index {
+                early_exit = true;
+                break;
+            }
+            if cur_edge_index.is_unset() {
+                panic!("Edge index is unset! Cant continue on circulator!");
+            }
+
+            edges.push(cur_edge_index);
+        }
+
+        if !early_exit {
+            panic!("Vertex circulator ran out of iterations!");
+        }
+
+        Option::Some(edges)
+    }
+
+    pub fn face_circulator(&self, index: HalfEdgeIndex) -> Option<Vec<HalfEdgeIndex>> {
+        if index.index >= self.len() as u32 {
+            return Option::None;
+        }
+
+        let mut early_exit = false;
+        let mut cur_edge_index = index;
+        let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
+        for i in 0..100 {
+            cur_edge_index = self[cur_edge_index].next_edge;
+            if cur_edge_index == index {
+                early_exit = true;
+                break;
+            }
+            if cur_edge_index.is_unset() {
+                panic!("Edge index is unset! Cant continue on circulator!");
+            }
+
+            edges.push(cur_edge_index);
+        }
+
+        if !early_exit {
+            panic!("Vertex circulator ran out of iterations!");
+        }
+
+        Option::Some(edges)
     }
 }
