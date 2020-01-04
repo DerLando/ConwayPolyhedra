@@ -22,4 +22,12 @@ impl Point {
             z: f64::MIN
         }
     }
+
+    pub fn from_values(x: f64, y: f64, z: f64) -> Point {
+        Point {
+            x: x,
+            y: y,
+            z: z
+        }
+    }
 }

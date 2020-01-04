@@ -23,3 +23,26 @@ pub mod vertex_tests {
         assert_eq!(mesh.vertex_count(), 2);
     }
 }
+
+#[cfg(test)]
+pub mod face_tests {
+    use super::super::geometry::{Mesh, Vertex, Face, Point, VertexIndex};
+
+    #[test]
+    fn face_adding() {
+        // Arrange
+        let mut mesh = Mesh::new();
+        mesh.add_vertex_position(Point::new());
+        mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
+        mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
+        mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
+
+        // Act
+        mesh.add_face_by_indices(vec![VertexIndex::new(0), VertexIndex::new(1), VertexIndex::new(2), VertexIndex::new(3)]);
+
+        // Assert
+        assert_eq!(mesh.vertex_count(), 4);
+        assert_eq!(mesh.half_edge_count(), 8);
+        assert_eq!(mesh.face_count(), 1);
+    }
+}

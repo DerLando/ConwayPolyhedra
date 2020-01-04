@@ -28,6 +28,10 @@ impl Mesh {
         self.vertices.add(v)
     }
 
+    pub fn add_vertex_position(&mut self, position: Point) -> usize {
+        self.vertices.add(Vertex::new(position))
+    }
+
     fn vertex_compact(&self) {
 
     }
