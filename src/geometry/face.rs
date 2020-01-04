@@ -36,3 +36,11 @@ impl IndexMut<FaceIndex> for FaceCollection {
         &mut self.faces[index.index as usize]
     }
 }
+
+impl FaceCollection {
+    pub fn new() -> FaceCollection {
+        FaceCollection {
+            faces: Vec::new()
+        }
+    }
+}

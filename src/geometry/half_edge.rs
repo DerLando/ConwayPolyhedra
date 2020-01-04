@@ -64,3 +64,11 @@ impl IndexMut<HalfEdgeIndex> for HalfEdgeCollection {
         &mut self.edges[index.index as usize]
     }
 }
+
+impl HalfEdgeCollection {
+    pub fn new() -> HalfEdgeCollection {
+        HalfEdgeCollection {
+            edges: Vec::new()
+        }
+    }
+}

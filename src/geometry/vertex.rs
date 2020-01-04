@@ -57,3 +57,20 @@ impl IndexMut<VertexIndex> for VertexCollection {
         &mut self.vertices[index.index as usize]
     }
 }
+
+impl VertexCollection {
+    pub fn new() -> VertexCollection {
+        VertexCollection {
+            vertices: Vec::new()
+        }
+    }
+
+    pub fn len(&self) -> usize {
+        self.vertices.len()
+    }
+
+    pub fn add(&mut self, v: Vertex) -> usize {
+        self.vertices.push(v);
+        self.len() - 1
+    }
+}
