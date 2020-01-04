@@ -1,5 +1,6 @@
 use super::constants::{UNSET_VALUE};
 use super::{VertexIndex, FaceIndex};
+use std::ops::{Index, IndexMut};
 
 pub struct HalfEdgeIndex {
     pub index: u32,
@@ -43,5 +44,23 @@ impl HalfEdge {
 
     pub fn is_unused(&self) -> bool {
         self.start_vertex.index == UNSET_VALUE
+    }
+}
+
+pub struct HalfEdgeCollection {
+    edges: Vec<HalfEdge>
+}
+
+impl Index<HalfEdgeIndex> for HalfEdgeCollection {
+    type Output = HalfEdge;
+
+    fn index(&self, index: HalfEdgeIndex) -> &Self::Output {
+        &self.edges[index.index as usize]
+    }
+}
+
+impl IndexMut<HalfEdgeIndex> for HalfEdgeCollection {
+    fn index_mut(&mut self, index: HalfEdgeIndex) -> &mut Self::Output {
+        &mut self.edges[index.index as usize]
     }
 }
