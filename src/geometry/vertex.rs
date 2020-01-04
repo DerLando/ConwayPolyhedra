@@ -1,16 +1,23 @@
 use super::constants::{UNSET_VALUE};
-use super::{HalfEdgeIndex, Point};
+use super::{HalfEdgeIndex, Point, MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
+#[derive(PartialEq)]
 pub struct VertexIndex {
     pub index: u32,
 }
 
-impl VertexIndex {
-    pub const fn unset() -> VertexIndex {
+impl UnsetValue for VertexIndex {
+    fn unset() -> VertexIndex {
         VertexIndex { index: UNSET_VALUE}
     }
 
+    fn is_unset(&self) -> bool {
+        *self == VertexIndex::unset()
+    }
+}
+
+impl VertexIndex {
     pub fn new(index: u32) -> VertexIndex {
         VertexIndex {index: index}
     }
@@ -22,7 +29,7 @@ pub struct Vertex {
 }
 
 impl Vertex {
-    pub const fn unset() -> Vertex {
+    pub fn unset() -> Vertex {
         Vertex {
             outgoing_half_edge: HalfEdgeIndex::unset(),
             location: Point::unset()
@@ -58,19 +65,22 @@ impl IndexMut<VertexIndex> for VertexCollection {
     }
 }
 
-impl VertexCollection {
-    pub fn new() -> VertexCollection {
+impl MeshPartCollection<Vertex> for VertexCollection {
+    fn new() -> VertexCollection {
         VertexCollection {
             vertices: Vec::new()
         }
     }
 
-    pub fn len(&self) -> usize {
+    fn len(&self) -> usize {
         self.vertices.len()
     }
 
-    pub fn add(&mut self, v: Vertex) -> usize {
+    fn add(&mut self, v: Vertex) -> usize {
         self.vertices.push(v);
         self.len() - 1
     }
+}
+
+impl VertexCollection {
 }

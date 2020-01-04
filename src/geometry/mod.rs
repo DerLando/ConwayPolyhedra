@@ -13,6 +13,9 @@ mod face;
 pub use self::mesh::Mesh;
 mod mesh;
 
+pub use self::traits::{MeshPartCollection, UnsetValue};
+mod traits;
+
 pub mod constants {
     // is 4294967295
     pub const UNSET_VALUE: u32 = std::u32::MAX;

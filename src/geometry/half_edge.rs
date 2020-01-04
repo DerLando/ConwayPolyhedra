@@ -1,16 +1,23 @@
 use super::constants::{UNSET_VALUE};
-use super::{VertexIndex, FaceIndex};
+use super::{VertexIndex, FaceIndex, MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
+#[derive(PartialEq)]
 pub struct HalfEdgeIndex {
     pub index: u32,
 }
 
-impl HalfEdgeIndex {
-    pub const fn unset() -> HalfEdgeIndex {
+impl UnsetValue for HalfEdgeIndex {
+    fn unset() -> HalfEdgeIndex {
         HalfEdgeIndex { index: UNSET_VALUE}
     }
 
+    fn is_unset(&self) -> bool {
+        *self == HalfEdgeIndex::unset()
+    }
+}
+
+impl HalfEdgeIndex {
     pub fn new(index: u32) -> HalfEdgeIndex {
         HalfEdgeIndex {index: index}
     }
@@ -65,10 +72,44 @@ impl IndexMut<HalfEdgeIndex> for HalfEdgeCollection {
     }
 }
 
-impl HalfEdgeCollection {
-    pub fn new() -> HalfEdgeCollection {
+impl MeshPartCollection<HalfEdge> for HalfEdgeCollection {
+    fn new() -> HalfEdgeCollection {
         HalfEdgeCollection {
             edges: Vec::new()
+        }
+    }
+
+    fn len(&self) -> usize {
+        self.edges.len()
+    }
+
+    fn add(&mut self, e: HalfEdge) -> usize {
+        self.edges.push(e);
+        self.len() - 1
+    }
+}
+
+impl HalfEdgeCollection {
+    pub fn edge_pair_index(index: &HalfEdgeIndex) -> HalfEdgeIndex {
+        if index.index == UNSET_VALUE {
+            HalfEdgeIndex::unset()
+        }
+        else {
+            match index.index % 2 {
+                0 => HalfEdgeIndex::new(index.index + 1),
+                1 => HalfEdgeIndex::new(index.index - 1),
+                _ => HalfEdgeIndex::unset()
+            }
+        }
+    }
+
+    pub fn edge_pair(&self, index: &HalfEdgeIndex) -> Option<&HalfEdge> {
+        match index.index >= self.len() as u32 {
+            true => Option::None,
+            false => {
+                let pair_index = HalfEdgeCollection::edge_pair_index(index);
+                Option::Some(&self[pair_index])
+            }
         }
     }
 }

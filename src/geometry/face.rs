@@ -1,15 +1,23 @@
 use super::constants::{UNSET_VALUE};
+use super::{MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
+#[derive(PartialEq)]
 pub struct FaceIndex {
     pub index: u32
 }
 
-impl FaceIndex {
-    pub const fn unset() -> FaceIndex {
+impl UnsetValue for FaceIndex {
+    fn unset() -> FaceIndex {
         FaceIndex { index: UNSET_VALUE}
     }
 
+    fn is_unset(&self) -> bool {
+        *self == FaceIndex::unset()
+    }
+}
+
+impl FaceIndex {
     pub fn new(index: u32) -> FaceIndex {
         FaceIndex {index: index}
     }
