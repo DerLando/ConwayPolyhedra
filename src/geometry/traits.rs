@@ -1,9 +1,9 @@
 
 
-pub trait MeshPartCollection<T> {
+pub trait MeshPartCollection<T, U> {
     fn new() -> Self;
     fn len(&self) -> usize;
-    fn add(&mut self, element: T) -> usize;
+    fn add(&mut self, element: T) -> U;
 }
 
 pub trait UnsetValue {

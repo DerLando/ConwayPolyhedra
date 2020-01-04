@@ -72,7 +72,7 @@ impl IndexMut<HalfEdgeIndex> for HalfEdgeCollection {
     }
 }
 
-impl MeshPartCollection<HalfEdge> for HalfEdgeCollection {
+impl MeshPartCollection<HalfEdge, HalfEdgeIndex> for HalfEdgeCollection {
     fn new() -> HalfEdgeCollection {
         HalfEdgeCollection {
             edges: Vec::new()
@@ -83,9 +83,9 @@ impl MeshPartCollection<HalfEdge> for HalfEdgeCollection {
         self.edges.len()
     }
 
-    fn add(&mut self, e: HalfEdge) -> usize {
+    fn add(&mut self, e: HalfEdge) -> HalfEdgeIndex {
         self.edges.push(e);
-        self.len() - 1
+        HalfEdgeIndex::new((self.len() - 1) as u32)
     }
 }
 

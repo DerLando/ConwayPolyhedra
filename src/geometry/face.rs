@@ -45,7 +45,7 @@ impl IndexMut<FaceIndex> for FaceCollection {
     }
 }
 
-impl MeshPartCollection<Face> for FaceCollection {
+impl MeshPartCollection<Face, FaceIndex> for FaceCollection {
     fn new() -> FaceCollection {
         FaceCollection {
             faces: Vec::new()
@@ -56,9 +56,9 @@ impl MeshPartCollection<Face> for FaceCollection {
         self.faces.len()
     }
 
-    fn add(&mut self, face: Face) -> usize {
+    fn add(&mut self, face: Face) -> FaceIndex {
         self.faces.push(face);
-        self.len() - 1
+        FaceIndex::new((self.len() - 1) as u32)
     }
 }
 

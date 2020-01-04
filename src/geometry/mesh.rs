@@ -24,11 +24,11 @@ impl Mesh {
         self.vertices.len()
     }
 
-    pub fn add_vertex(&mut self, v: Vertex) -> usize {
+    pub fn add_vertex(&mut self, v: Vertex) -> VertexIndex {
         self.vertices.add(v)
     }
 
-    pub fn add_vertex_position(&mut self, position: Point) -> usize {
+    pub fn add_vertex_position(&mut self, position: Point) -> VertexIndex {
         self.vertices.add(Vertex::new(position))
     }
 
@@ -43,19 +43,21 @@ impl Mesh {
         self.edges.len()
     }
 
-    pub fn add_half_edge(&mut self, e: HalfEdge) -> usize {
+    pub fn add_half_edge(&mut self, e: HalfEdge) -> HalfEdgeIndex {
         self.edges.add(e)
     }
 
-    pub fn add_edge_pair(&mut self, start: VertexIndex, end: VertexIndex, face: FaceIndex) {
+    pub fn add_edge_pair(&mut self, start: VertexIndex, end: VertexIndex, face: FaceIndex) -> HalfEdgeIndex {
         let edge_count = self.half_edge_count() as u32;
         let edge_index = HalfEdgeIndex::new(edge_count);
         let next_edge_index = HalfEdgeIndex::new(edge_count + 1);
         let e1 = HalfEdge::new(start, face, next_edge_index);
         let e2 = HalfEdge::new(end, FaceIndex::unset(), edge_index);
 
-        self.add_half_edge(e1);
+        let index = self.add_half_edge(e1);
         self.add_half_edge(e2);
+
+        index
     }
 
     pub fn find_half_edge_index(&self, start: VertexIndex, end: VertexIndex) -> Option<HalfEdgeIndex> {
@@ -82,7 +84,7 @@ impl Mesh {
         self.faces.len()
     }
 
-    pub fn add_face(&mut self, face: Face) -> usize {
+    pub fn add_face(&mut self, face: Face) -> FaceIndex {
         self.faces.add(face)
     }
 
@@ -97,7 +99,7 @@ impl Mesh {
 
         // test if vertices are valid
         let v_count = self.vertex_count();
-        for index in indices {
+        for index in indices.clone() {
             if index.index >= v_count as u32 {
                 panic!("Vertex index out of range!");
             }
@@ -107,7 +109,42 @@ impl Mesh {
             }
         }
 
+        // test each vertex pair, if they already share an half-edge
+        // if so, check if that pair is already linked to a face
+        // else, create it
+        let mut edges = vec![HalfEdgeIndex::unset(); n];
+        let face_index = FaceIndex::new(self.face_count() as u32);
+        for i in 0..n {
+            let cur_index = indices[i];
+            let next_index = indices[(i + 1) % (n - 1)];
 
+            // TODO: do this twice, start to end and end to start.
+            match self.find_half_edge_index(cur_index, next_index) {
+                None => {
+                    self.add_edge_pair(cur_index, next_index, face_index);
+                }
+                Some(index) => {
+                    if !index.is_unset() { // already an adjacent face -> non-manifold
+                        return unset;
+                    }
+                    self.edges[index].adjacent_face = face_index;
+                }
+            }
+        }
+
+        // Link half-edges
+        for i in 0..n {
+            let cur_index = indices[i];
+            let next_index = indices[(i + 1) % (n - 1)];
+
+            // TODO: do this twice, start to end and end to start.
+            match self.find_half_edge_index(cur_index, next_index) {
+                None => {
+                    panic!("Halfedge not found in second loop!")
+                }
+                Some(index) => {
+                    self.edges[index].outgoing_half_edge = 
+                }
 
         return unset;
     }

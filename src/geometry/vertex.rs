@@ -65,7 +65,7 @@ impl IndexMut<VertexIndex> for VertexCollection {
     }
 }
 
-impl MeshPartCollection<Vertex> for VertexCollection {
+impl MeshPartCollection<Vertex, VertexIndex> for VertexCollection {
     fn new() -> VertexCollection {
         VertexCollection {
             vertices: Vec::new()
@@ -76,9 +76,9 @@ impl MeshPartCollection<Vertex> for VertexCollection {
         self.vertices.len()
     }
 
-    fn add(&mut self, v: Vertex) -> usize {
+    fn add(&mut self, v: Vertex) -> VertexIndex {
         self.vertices.push(v);
-        self.len() - 1
+        VertexIndex::new((self.len() - 1) as u32)
     }
 }
 
