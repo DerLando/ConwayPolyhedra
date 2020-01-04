@@ -1,5 +1,5 @@
 use super::constants::{UNSET_VALUE};
-use super::{MeshPartCollection, UnsetValue};
+use super::{MeshPartCollection, UnsetValue, HalfEdgeIndex};
 use std::ops::{Index, IndexMut};
 
 #[derive(PartialEq, Copy, Clone)]
@@ -23,8 +23,22 @@ impl FaceIndex {
     }
 }
 
-pub struct Face{
+pub struct Face {
+    pub first_half_edge: HalfEdgeIndex
+}
 
+impl Face {
+    pub fn new(first_edge: HalfEdgeIndex) -> Face {
+        Face {
+            first_half_edge: first_edge
+        }
+    }
+
+    pub fn unset() -> Face {
+        Face {
+            first_half_edge: HalfEdgeIndex::unset()
+        }
+    }
 }
 
 pub struct FaceCollection {

@@ -1,5 +1,6 @@
 use super::{*};
 use super::constants::{UNSET_VALUE};
+use super::{MeshPartCollection, UnsetValue};
 
 pub struct Mesh {
     vertices: VertexCollection,
@@ -88,9 +89,9 @@ impl Mesh {
         self.faces.add(face)
     }
 
-    pub fn add_face_by_indices(&mut self, indices:Vec<VertexIndex>) -> usize {
+    pub fn add_face_by_indices(&mut self, indices:Vec<VertexIndex>) -> FaceIndex {
         let n = indices.len();
-        let unset = UNSET_VALUE as usize;
+        let unset = FaceIndex::unset();
 
         // Check for degenerate
         if n < 3 {
@@ -121,31 +122,24 @@ impl Mesh {
             // TODO: do this twice, start to end and end to start.
             match self.find_half_edge_index(cur_index, next_index) {
                 None => {
-                    self.add_edge_pair(cur_index, next_index, face_index);
+                    edges[i] = self.add_edge_pair(cur_index, next_index, face_index);
                 }
                 Some(index) => {
                     if !index.is_unset() { // already an adjacent face -> non-manifold
                         return unset;
                     }
                     self.edges[index].adjacent_face = face_index;
+                    edges[i] = index;
                 }
             }
         }
 
         // Link half-edges
         for i in 0..n {
-            let cur_index = indices[i];
-            let next_index = indices[(i + 1) % (n - 1)];
+            self.edges[edges[i]].next_edge = edges[(i + 1) % (n - 1)];
+        }
 
-            // TODO: do this twice, start to end and end to start.
-            match self.find_half_edge_index(cur_index, next_index) {
-                None => {
-                    panic!("Halfedge not found in second loop!")
-                }
-                Some(index) => {
-                    self.edges[index].outgoing_half_edge = 
-                }
-
-        return unset;
+        // Add face
+        return self.add_face(Face::new(edges[0]));
     }
 }
