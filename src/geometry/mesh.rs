@@ -113,7 +113,7 @@ impl Mesh {
             None => return Option::None,
             Some(circulator) => {
                 for index in circulator {
-                    if end == self.edges.edge_pair(index).unwrap().start_vertex {
+                    if end == self.find_end_vertex_index(index) {
                         return Some(index);
                     }
                 }

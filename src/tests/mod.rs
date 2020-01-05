@@ -62,7 +62,6 @@ pub mod edge_tests {
         assert_eq!(HalfEdgeIndex::new(0), mesh.find_half_edge_index(v0, v1).unwrap());
         assert_eq!(HalfEdgeIndex::new(2), mesh.find_half_edge_index(v1, v2).unwrap());
         assert_eq!(HalfEdgeIndex::new(4), mesh.find_half_edge_index(v2, v0).unwrap());
-        assert_eq!(Option::None, mesh.find_half_edge_index(v1, v0));
 
     }
 
@@ -78,11 +77,15 @@ pub mod edge_tests {
         // Assert
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(0)), v1);
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(1)), v0);
+
         // this fails currently
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(2)), v2);
+
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(3)), v1);
+
         // this fails currently
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(4)), v0);
+
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(5)), v2);
     }
 }
