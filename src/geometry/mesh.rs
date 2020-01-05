@@ -69,7 +69,7 @@ impl Mesh {
             None => return Option::None,
             Some(circulator) => {
                 for index in circulator {
-                    if end == self.edges.edge_pair(&index).unwrap().start_vertex {
+                    if end == self.edges.edge_pair(index).unwrap().start_vertex {
                         return Some(index);
                     }
                 }
@@ -141,5 +141,9 @@ impl Mesh {
 
         // Add face
         return self.add_face(Face::new(edges[0]));
+    }
+
+    pub fn remove_face(&mut self, index: FaceIndex) {
+
     }
 }

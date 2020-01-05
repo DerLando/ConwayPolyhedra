@@ -90,7 +90,7 @@ impl MeshPartCollection<HalfEdge, HalfEdgeIndex> for HalfEdgeCollection {
 }
 
 impl HalfEdgeCollection {
-    pub fn edge_pair_index(index: &HalfEdgeIndex) -> HalfEdgeIndex {
+    pub fn edge_pair_index(index: HalfEdgeIndex) -> HalfEdgeIndex {
         if index.index == UNSET_VALUE {
             HalfEdgeIndex::unset()
         }
@@ -103,7 +103,7 @@ impl HalfEdgeCollection {
         }
     }
 
-    pub fn edge_pair(&self, index: &HalfEdgeIndex) -> Option<&HalfEdge> {
+    pub fn edge_pair(&self, index: HalfEdgeIndex) -> Option<&HalfEdge> {
         match index.index >= self.len() as u32 {
             true => Option::None,
             false => {
@@ -113,7 +113,7 @@ impl HalfEdgeCollection {
         }
     }
 
-    pub fn end_vertex_index(&self, index: &HalfEdgeIndex) -> Option<VertexIndex> {
+    pub fn end_vertex_index(&self, index: HalfEdgeIndex) -> Option<VertexIndex> {
         let pair = self.edge_pair(index);
         match pair {
             None => None,
@@ -130,7 +130,7 @@ impl HalfEdgeCollection {
         let mut cur_edge_index = index;
         let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
         for i in 0..100 {
-            cur_edge_index = self[HalfEdgeCollection::edge_pair_index(&cur_edge_index)].next_edge;
+            cur_edge_index = self[HalfEdgeCollection::edge_pair_index(cur_edge_index)].next_edge;
             if cur_edge_index == index {
                 early_exit = true;
                 break;
@@ -175,5 +175,14 @@ impl HalfEdgeCollection {
         }
 
         Option::Some(edges)
+    }
+
+    pub fn is_boundary_index(&self, index: HalfEdgeIndex) -> Option<bool> {
+        match self.edge_pair(index) {
+            None => None,
+            Some(pair) => {
+                Option::Some((self[index].adjacent_face.is_unset()) || pair.adjacent_face.is_unset())
+            }
+        }
     }
 }
