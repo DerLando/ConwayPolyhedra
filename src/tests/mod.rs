@@ -55,14 +55,35 @@ pub mod edge_tests {
         let v0 = mesh.add_vertex_position(Point::new());
         let v1 = mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
         let v2 = mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
-        let v3 = mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
-        mesh.add_face_by_indices(vec![v0, v1, v2, v3]);
+        mesh.add_face_by_indices(vec![v0, v1, v2]);
         
         // Assert
+        println!("can_find_edges mesh is: {:?}", mesh);
         assert_eq!(HalfEdgeIndex::new(0), mesh.find_half_edge_index(v0, v1).unwrap());
         assert_eq!(HalfEdgeIndex::new(2), mesh.find_half_edge_index(v1, v2).unwrap());
-        // assert_eq!(HalfEdgeIndex::new(1), mesh.find_half_edge_index(v1, v0).unwrap());
+        assert_eq!(HalfEdgeIndex::new(4), mesh.find_half_edge_index(v2, v0).unwrap());
+        assert_eq!(Option::None, mesh.find_half_edge_index(v1, v0));
 
+    }
+
+    #[test]
+    fn can_find_end_vertices() {
+        // Arrange
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex_position(Point::new());
+        let v1 = mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
+        let v2 = mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
+        mesh.add_face_by_indices(vec![v0, v1, v2]);
+
+        // Assert
+        assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(0)), v1);
+        assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(1)), v0);
+        // this fails currently
+        assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(2)), v2);
+        assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(3)), v1);
+        // this fails currently
+        assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(4)), v0);
+        assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(5)), v2);
     }
 }
 
@@ -98,5 +119,25 @@ pub mod face_tests {
         assert_eq!(mesh.vertex_count(), 0);
         assert_eq!(mesh.half_edge_count(), 0);
         assert_eq!(mesh.face_count(), 0);
+    }
+
+    #[test]
+    fn add_multiple_faces() {
+        // Arrange
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex_position(Point::new());
+        let v1 = mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
+        let v2 = mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
+        let v3 = mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
+
+        // Act
+        let f0 = mesh.add_face_by_indices(vec![v0, v1, v2]);
+        let f1 = mesh.add_face_by_indices(vec![v2, v0, v3]);
+
+        // Assert
+        println!("f0 and f1: {:?}, {:?}", f0, f1);
+        assert_eq!(mesh.face_count(), 2);
+        assert_eq!(mesh.vertex_count(), 4);
+        assert_eq!(mesh.half_edge_count(), 10);
     }
 }

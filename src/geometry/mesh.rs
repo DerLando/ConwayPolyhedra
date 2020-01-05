@@ -101,9 +101,13 @@ impl Mesh {
         index1
     }
 
+    pub fn find_end_vertex_index(&self, index: HalfEdgeIndex) -> VertexIndex {
+        self.edges[HalfEdgeCollection::edge_pair_index(index)].start_vertex
+    }
+
     pub fn find_half_edge_index(&self, start: VertexIndex, end: VertexIndex) -> Option<HalfEdgeIndex> {
         let halfedge_index = self.vertices[start].outgoing_half_edge;
-        println!("find index: {:?}", halfedge_index);
+        println!("outgoing edge for {:?} is: {:?}", start, halfedge_index);
         let result = self.edges.vertex_circulator(halfedge_index);
         match result {
             None => return Option::None,
@@ -248,9 +252,8 @@ impl Mesh {
         let face_index = FaceIndex::new(self.face_count() as u32);
         for i in 0..n {
             let cur_index = indices[i];
-            let next_index = indices[(i + 1) % (n - 1)];
+            let next_index = indices[(i + 1) % n];
 
-            // TODO: do this twice, start to end and end to start.
             match self.find_half_edge_index(cur_index, next_index) {
                 None => {
                     edges[i] = self.add_edge_pair(cur_index, next_index, face_index);
@@ -260,6 +263,7 @@ impl Mesh {
                     if !index.is_unset() { // already an adjacent face -> non-manifold
                         return unset;
                     }
+                    println!("found an index: {:?}", index);
                     self.edges[index].adjacent_face = face_index;
                     edges[i] = index;
                 }

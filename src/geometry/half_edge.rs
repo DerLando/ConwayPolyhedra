@@ -109,12 +109,12 @@ impl HalfEdgeCollection {
         }
     }
 
-    pub fn edge_pair(&self, index: HalfEdgeIndex) -> Option<&HalfEdge> {
+    pub fn edge_pair(&self, index: HalfEdgeIndex) -> Option<HalfEdge> {
         match index.index >= self.len() as u32 {
             true => Option::None,
             false => {
                 let pair_index = HalfEdgeCollection::edge_pair_index(index);
-                Option::Some(&self[pair_index])
+                Option::Some(self[pair_index])
             }
         }
     }
@@ -135,9 +135,9 @@ impl HalfEdgeCollection {
         let mut early_exit = false;
         let mut cur_edge_index = index;
         let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
-        for i in 0..100 {
-            cur_edge_index = self[HalfEdgeCollection::edge_pair_index(cur_edge_index)].next_edge;
-            println!("cur_edge_index in circulator: {:?}", cur_edge_index);
+        for _i in 0..100 {
+            cur_edge_index = self[cur_edge_index].next_edge;
+            println!("cur_edge_index in v_circulator: {:?}", cur_edge_index);
             if cur_edge_index == index {
                 early_exit = true;
                 break;
@@ -153,6 +153,7 @@ impl HalfEdgeCollection {
             panic!("Vertex circulator ran out of iterations!");
         }
 
+        println!("v_circulator returning edges: {:#?}", edges);
         Option::Some(edges)
     }
 
