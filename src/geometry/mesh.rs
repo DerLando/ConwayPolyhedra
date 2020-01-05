@@ -1,12 +1,18 @@
 use super::{*};
 use super::constants::{UNSET_VALUE};
 use super::{MeshPartCollection, UnsetValue};
+use std::fmt;
 
-#[derive(Debug)]
 pub struct Mesh {
     vertices: VertexCollection,
     edges: HalfEdgeCollection,
     faces: FaceCollection,
+}
+
+impl fmt::Debug for Mesh {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "({:#?}, {:#?}), {:#?}", self.vertices, self.faces, self.edges)
+    }
 }
 
 // general methods
@@ -61,7 +67,7 @@ impl Mesh {
         }
 
         // trim list down to size
-        if marker.index < self.face_count() as u32 {
+        if marker.index < self.vertex_count() as u32 {
             self.vertices.remove_range(marker, self.vertex_count() - marker.index as usize);
         }
     }
@@ -84,15 +90,20 @@ impl Mesh {
         let e1 = HalfEdge::new(start, face, next_edge_index);
         let e2 = HalfEdge::new(end, FaceIndex::unset(), edge_index);
 
-        let index = self.add_half_edge(e1);
-        self.add_half_edge(e2);
+        let index1 = self.add_half_edge(e1);
+        let _index2 = self.add_half_edge(e2);
 
-        index
+        println!("start outgoing v: {:?}", self.vertices[start].outgoing_half_edge);
+        if self.vertices[start].outgoing_half_edge.is_unset() {
+            self.vertices[start].outgoing_half_edge = index1;
+        }
+        println!("start outgoing v: {:?}", self.vertices[start].outgoing_half_edge);
+        index1
     }
 
     pub fn find_half_edge_index(&self, start: VertexIndex, end: VertexIndex) -> Option<HalfEdgeIndex> {
         let halfedge_index = self.vertices[start].outgoing_half_edge;
-
+        println!("find index: {:?}", halfedge_index);
         let result = self.edges.vertex_circulator(halfedge_index);
         match result {
             None => return Option::None,
@@ -108,16 +119,16 @@ impl Mesh {
     }
 
     pub fn remove_half_edge_pair(&mut self, index: HalfEdgeIndex) {
-        if index.is_unset() {
-            return;
-        }
+        // if index.is_unset() {
+        //     return;
+        // }
 
         let pair = HalfEdgeCollection::edge_pair_index(index);
 
-        if pair.is_unset(){
-            self.edges[index] = HalfEdge::unset();
-            return;
-        }
+        // if pair.is_unset(){
+        //     self.edges[index] = HalfEdge::unset();
+        //     return;
+        // }
 
         // reconnect adjacent halfedges
         self.edges.make_consecutive(self.edges[pair].previous_edge, self.edges[index].next_edge);
@@ -243,6 +254,7 @@ impl Mesh {
             match self.find_half_edge_index(cur_index, next_index) {
                 None => {
                     edges[i] = self.add_edge_pair(cur_index, next_index, face_index);
+                    println!("added edge: {:#?}", edges[i])
                 }
                 Some(index) => {
                     if !index.is_unset() { // already an adjacent face -> non-manifold
@@ -256,7 +268,8 @@ impl Mesh {
 
         // Link half-edges
         for i in 0..n {
-            self.edges[edges[i]].next_edge = edges[(i + 1) % (n - 1)];
+            self.edges[edges[i]].next_edge = edges[(i + 1) % n];
+            // TODO: link previous also
         }
 
         // Add face
@@ -267,6 +280,7 @@ impl Mesh {
         match self.face_half_edge_indices(index) {
             None => (),
             Some(indices) => {
+                println!("edges in face are: {:#?}", indices);
                 for edge_index in indices {
                     if self.edges.is_boundary_index(edge_index).unwrap() {
                         self.remove_half_edge_pair(edge_index);

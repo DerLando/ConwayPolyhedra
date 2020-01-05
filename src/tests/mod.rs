@@ -6,6 +6,7 @@ pub mod vertex_tests {
         assert_eq!(2 + 2, 4);
     }
 
+    #[test]
     fn vertex_adding() {
         // Arrange
         let mut mesh = Mesh::new();
@@ -21,6 +22,47 @@ pub mod vertex_tests {
         assert_eq!(mesh.vertex_count(), 1);
         mesh.add_vertex(v2);
         assert_eq!(mesh.vertex_count(), 2);
+    }
+
+    #[test]
+    fn vertex_compacting() {
+        // Arrange
+        let mut mesh = Mesh::new();
+        let pt1 = Point::new();
+        let mut pt2 = Point::new();
+        pt2.x = 10.0;
+        let v1 = Vertex::new(pt1);
+        let v2 = Vertex::new(pt2);
+
+        // Act
+        mesh.add_vertex(v1);
+        mesh.add_vertex(v2);
+        mesh.compact();
+
+        // Assert
+        assert_eq!(mesh.vertex_count(), 0);
+    }
+}
+
+#[cfg(test)]
+pub mod edge_tests {
+    use super::super::geometry::{Mesh, Vertex, Face, Point, VertexIndex, FaceIndex, HalfEdge, HalfEdgeIndex};
+
+    #[test]
+    fn can_find_edges() {
+        // Arrange
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex_position(Point::new());
+        let v1 = mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
+        let v2 = mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
+        let v3 = mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
+        mesh.add_face_by_indices(vec![v0, v1, v2, v3]);
+        
+        // Assert
+        assert_eq!(HalfEdgeIndex::new(0), mesh.find_half_edge_index(v0, v1).unwrap());
+        assert_eq!(HalfEdgeIndex::new(2), mesh.find_half_edge_index(v1, v2).unwrap());
+        // assert_eq!(HalfEdgeIndex::new(1), mesh.find_half_edge_index(v1, v0).unwrap());
+
     }
 }
 
@@ -38,16 +80,20 @@ pub mod face_tests {
         mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
 
         // Act
-        mesh.add_face_by_indices(vec![VertexIndex::new(0), VertexIndex::new(1), VertexIndex::new(2), VertexIndex::new(3)]);
+        let f_index = mesh.add_face_by_indices(vec![VertexIndex::new(0), VertexIndex::new(1), VertexIndex::new(2), VertexIndex::new(3)]);
 
         // Assert
+        assert_eq!(FaceIndex::new(0), f_index);
         assert_eq!(mesh.vertex_count(), 4);
         assert_eq!(mesh.half_edge_count(), 8);
         assert_eq!(mesh.face_count(), 1);
 
         // Act
+        println!("NOT compact mesh is: {:?}", mesh);
         mesh.remove_face(FaceIndex::new(0));
         mesh.compact();
+
+        // Assert
         println!("Compact mesh is: {:?}", mesh);
         assert_eq!(mesh.vertex_count(), 0);
         assert_eq!(mesh.half_edge_count(), 0);

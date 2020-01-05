@@ -128,7 +128,7 @@ impl HalfEdgeCollection {
     }
 
     pub fn vertex_circulator(&self, index: HalfEdgeIndex) -> Option<Vec<HalfEdgeIndex>> {
-        if index.index >= self.len() as u32 {
+        if (index.is_unset()) || (index.index >= self.len() as u32) {
             return Option::None;
         }
 
@@ -137,6 +137,7 @@ impl HalfEdgeCollection {
         let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
         for i in 0..100 {
             cur_edge_index = self[HalfEdgeCollection::edge_pair_index(cur_edge_index)].next_edge;
+            println!("cur_edge_index in circulator: {:?}", cur_edge_index);
             if cur_edge_index == index {
                 early_exit = true;
                 break;
@@ -159,12 +160,13 @@ impl HalfEdgeCollection {
         if index.index >= self.len() as u32 {
             return Option::None;
         }
-
+        println!("calculating face_circulator for: {:?}", index);
         let mut early_exit = false;
         let mut cur_edge_index = index;
         let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
         for i in 0..100 {
             cur_edge_index = self[cur_edge_index].next_edge;
+            println!("cur_next_index is: {:?}", cur_edge_index);
             if cur_edge_index == index {
                 early_exit = true;
                 break;
@@ -184,6 +186,7 @@ impl HalfEdgeCollection {
     }
 
     pub fn is_boundary_index(&self, index: HalfEdgeIndex) -> Option<bool> {
+        println!("Edge pair for {:#?} is {:#?}", index, self.edge_pair(index));
         match self.edge_pair(index) {
             None => None,
             Some(pair) => {
