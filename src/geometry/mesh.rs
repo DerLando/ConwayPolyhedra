@@ -2,6 +2,7 @@ use super::{*};
 use super::constants::{UNSET_VALUE};
 use super::{MeshPartCollection, UnsetValue};
 
+#[derive(Debug)]
 pub struct Mesh {
     vertices: VertexCollection,
     edges: HalfEdgeCollection,
@@ -16,6 +17,12 @@ impl Mesh {
             edges: HalfEdgeCollection::new(),
             faces: FaceCollection::new()
         }
+    }
+
+    pub fn compact(&mut self) {
+        self.vertex_compact();
+        self.face_compact();
+        self.half_edge_compact();
     }
 }
 
@@ -33,8 +40,30 @@ impl Mesh {
         self.vertices.add(Vertex::new(position))
     }
 
-    fn vertex_compact(&self) {
+    fn vertex_compact(&mut self) {
+        let mut marker = VertexIndex::new(0);
 
+        for i in 0..self.vertex_count() {
+            let iter = VertexIndex::new(i as u32);
+
+            if !self.vertices[iter].is_unused() {
+                if marker < iter {
+                    self.vertices[marker] = self.vertices[iter];
+
+                    // update all outgoing halfedges
+                    let first = self.vertices[marker].outgoing_half_edge;
+                    for edge_index in self.edges.vertex_circulator(first).unwrap() {
+                        self.edges[edge_index].start_vertex = marker;
+                    }
+                marker.increment();
+                }
+            }
+        }
+
+        // trim list down to size
+        if marker.index < self.face_count() as u32 {
+            self.vertices.remove_range(marker, self.vertex_count() - marker.index as usize);
+        }
     }
 }
 
@@ -76,6 +105,97 @@ impl Mesh {
                 return Option::None
             }
         };
+    }
+
+    pub fn remove_half_edge_pair(&mut self, index: HalfEdgeIndex) {
+        if index.is_unset() {
+            return;
+        }
+
+        let pair = HalfEdgeCollection::edge_pair_index(index);
+
+        if pair.is_unset(){
+            self.edges[index] = HalfEdge::unset();
+            return;
+        }
+
+        // reconnect adjacent halfedges
+        self.edges.make_consecutive(self.edges[pair].previous_edge, self.edges[index].next_edge);
+        self.edges.make_consecutive(self.edges[index].previous_edge, self.edges[pair].next_edge);
+
+        // update outgoind halfedges, if necessary. If last halfedge then
+        // make vertex unused (outgoing.is_unset()), otherwise set to next around vertex
+        let v_index = self.edges[index].start_vertex;
+        let v_pair = self.edges[pair].start_vertex;
+
+        if self.vertices[v_index].outgoing_half_edge == index {
+            if self.edges[pair].next_edge == index {
+                self.vertices[v_index].outgoing_half_edge = HalfEdgeIndex::unset();
+            }
+            else {
+                self.vertices[v_index].outgoing_half_edge = self.edges[pair].next_edge;
+            }
+        }
+        if self.vertices[v_pair].outgoing_half_edge == pair {
+            if self.edges[index].next_edge == pair {
+                self.vertices[v_pair].outgoing_half_edge = HalfEdgeIndex::unset();
+            }
+            else {
+                self.vertices[v_pair].outgoing_half_edge = self.edges[index].next_edge;
+            }
+        }
+
+        // mark half-edges for deletion
+        self.edges[index] = HalfEdge::unset();
+        self.edges[pair] = HalfEdge::unset();
+    }
+
+    fn half_edge_compact(&mut self){
+        let mut marker = HalfEdgeIndex::new(0);
+
+        for i in 0..self.half_edge_count() {
+
+            let iter = HalfEdgeIndex::new(i as u32);
+
+            // check if used
+            if !self.edges[marker].is_unused() {
+                if marker < iter {
+                    // Copy current edge to marker slot
+                    self.edges[marker] = self.edges[iter];
+
+                    // update start vertex if necessary
+                    let v_index = self.edges[marker].start_vertex;
+                    if self.vertices[v_index].outgoing_half_edge == iter {
+                        self.vertices[v_index].outgoing_half_edge = marker;
+                    }
+
+                    // update adjacent face if necessary
+                    if self.edges[marker].adjacent_face.is_unset() {
+                        let f_index = self.edges[marker].adjacent_face;
+                        if self.faces[f_index].first_half_edge == iter {
+                            self.faces[f_index].first_half_edge = marker;
+                        }
+                    }
+
+                    // update next/prev halfedges
+                    let next_index = self.edges[marker].next_edge;
+                    self.edges[next_index].previous_edge = marker;
+                    let prev_index = self.edges[marker].previous_edge;
+                    self.edges[prev_index].next_edge = marker;
+                }
+                marker.increment(); // spots filled, increment the marker
+            }
+        }
+
+        // check if even count of edges
+        if marker.index % 2 != 0 {
+            panic!("Halfedge count was uneven after compact call!");
+        }
+
+        // trim list
+        if marker.index < self.half_edge_count() as u32 {
+            self.edges.remove_range(marker, self.half_edge_count() - marker.index as usize)
+        }
     }
 }
 
@@ -144,6 +264,51 @@ impl Mesh {
     }
 
     pub fn remove_face(&mut self, index: FaceIndex) {
-
+        match self.face_half_edge_indices(index) {
+            None => (),
+            Some(indices) => {
+                for edge_index in indices {
+                    if self.edges.is_boundary_index(edge_index).unwrap() {
+                        self.remove_half_edge_pair(edge_index);
+                    }
+                    else {
+                        self.edges[edge_index].adjacent_face = FaceIndex::unset();
+                        self.vertices[self.edges[edge_index].start_vertex].outgoing_half_edge = edge_index;
+                    }
+                }
+                self.faces[index] = Face::unset();
+            }
+        }
     }
+
+    pub fn face_half_edge_indices(&self, index: FaceIndex) -> Option<Vec<HalfEdgeIndex>> {
+        self.edges.face_circulator(self.faces[index].first_half_edge)
+    }
+
+    pub fn face_compact(&mut self) {
+        let mut marker = FaceIndex::new(0);
+
+        for i in 0..self.face_count() {
+            let iter = FaceIndex::new(i as u32);
+
+            // test valid face
+            if !self.faces[iter].is_unused() {
+                if marker < iter {
+                    self.faces[marker] = self.faces[iter];
+
+                    // update all adjacent half-edges
+                    for edge_index in self.face_half_edge_indices(marker).unwrap() {
+                        self.edges[edge_index].adjacent_face = marker;
+                    }
+                }
+                marker.increment();
+            }
+        }
+
+        // trim list down to new size
+        if marker.index < self.face_count() as u32 {
+            self.faces.remove_range(marker, self.face_count() - marker.index as usize)
+        }
+    }
+
 }

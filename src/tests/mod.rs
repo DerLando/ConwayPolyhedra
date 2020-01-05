@@ -26,7 +26,7 @@ pub mod vertex_tests {
 
 #[cfg(test)]
 pub mod face_tests {
-    use super::super::geometry::{Mesh, Vertex, Face, Point, VertexIndex};
+    use super::super::geometry::{Mesh, Vertex, Face, Point, VertexIndex, FaceIndex};
 
     #[test]
     fn face_adding() {
@@ -44,5 +44,13 @@ pub mod face_tests {
         assert_eq!(mesh.vertex_count(), 4);
         assert_eq!(mesh.half_edge_count(), 8);
         assert_eq!(mesh.face_count(), 1);
+
+        // Act
+        mesh.remove_face(FaceIndex::new(0));
+        mesh.compact();
+        println!("Compact mesh is: {:?}", mesh);
+        assert_eq!(mesh.vertex_count(), 0);
+        assert_eq!(mesh.half_edge_count(), 0);
+        assert_eq!(mesh.face_count(), 0);
     }
 }

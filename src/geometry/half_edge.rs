@@ -2,7 +2,7 @@ use super::constants::{UNSET_VALUE};
 use super::{VertexIndex, FaceIndex, MeshPartCollection, UnsetValue};
 use std::ops::{Index, IndexMut};
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, PartialOrd, Debug)]
 pub struct HalfEdgeIndex {
     pub index: u32,
 }
@@ -21,8 +21,13 @@ impl HalfEdgeIndex {
     pub fn new(index: u32) -> HalfEdgeIndex {
         HalfEdgeIndex {index: index}
     }
+
+    pub fn increment(&mut self) {
+        self.index += 1;
+    }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct HalfEdge {
     pub start_vertex: VertexIndex,
     pub adjacent_face: FaceIndex,
@@ -50,10 +55,11 @@ impl HalfEdge {
     }
 
     pub fn is_unused(&self) -> bool {
-        self.start_vertex.index == UNSET_VALUE
+        self.start_vertex.is_unset()
     }
 }
 
+#[derive(Debug)]
 pub struct HalfEdgeCollection {
     edges: Vec<HalfEdge>
 }
@@ -184,5 +190,18 @@ impl HalfEdgeCollection {
                 Option::Some((self[index].adjacent_face.is_unset()) || pair.adjacent_face.is_unset())
             }
         }
+    }
+
+    pub fn make_consecutive(&mut self, prev: HalfEdgeIndex, next: HalfEdgeIndex) {
+        if (prev.is_unset()) | (next.is_unset()) {
+            return
+        }
+
+        self[prev].next_edge = next;
+        self[next].previous_edge = prev;
+    }
+
+    pub fn remove_range(&mut self, start: HalfEdgeIndex, count: usize) {
+        self.edges.drain(start.index as usize..start.index as usize + count);
     }
 }

@@ -2,7 +2,7 @@ use super::constants::{UNSET_VALUE};
 use super::{MeshPartCollection, UnsetValue, HalfEdgeIndex};
 use std::ops::{Index, IndexMut};
 
-#[derive(PartialEq, Copy, Clone)]
+#[derive(PartialEq, Copy, Clone, PartialOrd, Debug)]
 pub struct FaceIndex {
     pub index: u32
 }
@@ -21,8 +21,13 @@ impl FaceIndex {
     pub fn new(index: u32) -> FaceIndex {
         FaceIndex {index: index}
     }
+
+    pub fn increment(&mut self) {
+        self.index += 1;
+    }
 }
 
+#[derive(Copy, Clone, Debug)]
 pub struct Face {
     pub first_half_edge: HalfEdgeIndex
 }
@@ -39,8 +44,13 @@ impl Face {
             first_half_edge: HalfEdgeIndex::unset()
         }
     }
+
+    pub fn is_unused(&self) -> bool {
+        self.first_half_edge.is_unset()
+    }
 }
 
+#[derive(Debug)]
 pub struct FaceCollection {
     faces: Vec<Face>
 }
@@ -77,4 +87,7 @@ impl MeshPartCollection<Face, FaceIndex> for FaceCollection {
 }
 
 impl FaceCollection {
+    pub fn remove_range(&mut self, start: FaceIndex, count: usize) {
+        self.faces.drain(start.index as usize..start.index as usize + count);
+    }
 }
