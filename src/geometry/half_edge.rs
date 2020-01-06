@@ -136,7 +136,7 @@ impl HalfEdgeCollection {
         let mut cur_edge_index = index;
         let mut edges: Vec<HalfEdgeIndex> = vec![cur_edge_index];
         for _i in 0..100 {
-            cur_edge_index = self[cur_edge_index].next_edge;
+            cur_edge_index = self[HalfEdgeCollection::edge_pair_index(cur_edge_index)].next_edge;
             println!("cur_edge_index in v_circulator: {:?}", cur_edge_index);
             if cur_edge_index == index {
                 early_exit = true;

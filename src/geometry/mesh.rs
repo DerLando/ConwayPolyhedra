@@ -46,6 +46,10 @@ impl Mesh {
         self.vertices.add(Vertex::new(position))
     }
 
+    pub fn get_vertex_circulator(&self, index: VertexIndex) -> Option<Vec<HalfEdgeIndex>> {
+        self.edges.vertex_circulator(self.vertices[index].outgoing_half_edge)
+    }
+
     fn vertex_compact(&mut self) {
         let mut marker = VertexIndex::new(0);
 
@@ -93,11 +97,10 @@ impl Mesh {
         let index1 = self.add_half_edge(e1);
         let _index2 = self.add_half_edge(e2);
 
-        println!("start outgoing v: {:?}", self.vertices[start].outgoing_half_edge);
         if self.vertices[start].outgoing_half_edge.is_unset() {
             self.vertices[start].outgoing_half_edge = index1;
         }
-        println!("start outgoing v: {:?}", self.vertices[start].outgoing_half_edge);
+
         index1
     }
 
@@ -123,22 +126,13 @@ impl Mesh {
     }
 
     pub fn remove_half_edge_pair(&mut self, index: HalfEdgeIndex) {
-        // if index.is_unset() {
-        //     return;
-        // }
-
         let pair = HalfEdgeCollection::edge_pair_index(index);
-
-        // if pair.is_unset(){
-        //     self.edges[index] = HalfEdge::unset();
-        //     return;
-        // }
 
         // reconnect adjacent halfedges
         self.edges.make_consecutive(self.edges[pair].previous_edge, self.edges[index].next_edge);
         self.edges.make_consecutive(self.edges[index].previous_edge, self.edges[pair].next_edge);
 
-        // update outgoind halfedges, if necessary. If last halfedge then
+        // update outgoing halfedges, if necessary. If last halfedge then
         // make vertex unused (outgoing.is_unset()), otherwise set to next around vertex
         let v_index = self.edges[index].start_vertex;
         let v_pair = self.edges[pair].start_vertex;
@@ -230,6 +224,7 @@ impl Mesh {
 
         // Check for degenerate
         if n < 3 {
+            println!("add_face_by_indices ERROR: Degenerate vertex count!");
             return unset;
         }
 
@@ -240,15 +235,24 @@ impl Mesh {
                 panic!("Vertex index out of range!");
             }
             let outgoing_halfedge_index = self.vertices[index].outgoing_half_edge;
-            if (!outgoing_halfedge_index.is_unset()) && (!self.edges[outgoing_halfedge_index].adjacent_face.is_unset()){
-                return unset;
+
+            match self.edges.is_boundary_index(outgoing_halfedge_index) {
+                None => (), // no half edge defined, fine for now
+                Some(is_boundary) => {
+                    if !is_boundary {
+                        println!("add_face_by_indices ERROR: topology problem at vertex {:?}: outgoing edge {:?} is not a boundary edge!", index, outgoing_halfedge_index);
+                        return unset;
+                    }
+                }
             }
         }
 
         // test each vertex pair, if they already share an half-edge
         // if so, check if that pair is already linked to a face
         // else, create it
+        println!("add_face_by_indices STATUS: Testing vertex pairs for shared half-edges");
         let mut edges = vec![HalfEdgeIndex::unset(); n];
+        let mut is_new = vec![false; n];
         let face_index = FaceIndex::new(self.face_count() as u32);
         for i in 0..n {
             let cur_index = indices[i];
@@ -256,24 +260,97 @@ impl Mesh {
 
             match self.find_half_edge_index(cur_index, next_index) {
                 None => {
-                    edges[i] = self.add_edge_pair(cur_index, next_index, face_index);
-                    println!("added edge: {:#?}", edges[i])
+                    is_new[i] = true;
+                    // edges[i] = self.add_edge_pair(cur_index, next_index, face_index);
+                    // println!("add_face_by_indices STATUS: added edge pair: {:#?}", edges[i])
                 }
                 Some(index) => {
+                    println!("add_face_by_indices STATUS: found an index: {:?}", index);
                     if !index.is_unset() { // already an adjacent face -> non-manifold
+                        println!("add_face_by_indices ERROR: half-edge {:?} already had an adjacent face defined, defining another here would lead to non-manifald topology. Aborting!", index);
                         return unset;
                     }
-                    println!("found an index: {:?}", index);
-                    self.edges[index].adjacent_face = face_index;
+                    // self.edges[index].adjacent_face = face_index;
                     edges[i] = index;
                 }
             }
         }
 
+        // now create any missing halfedge pairs
+        for i in 0..n {
+
+            let cur_index = indices[i];
+            let next_index = indices[(i + 1) % n];
+
+            if is_new[i] { // new half-edge pair required
+                edges[i] = self.add_edge_pair(cur_index, next_index, face_index);
+            }
+            else{
+                // link existing halfedge to new face
+                self.edges[edges[i]].adjacent_face = face_index;
+            }
+        }
+
         // Link half-edges
         for i in 0..n {
-            self.edges[edges[i]].next_edge = edges[(i + 1) % n];
-            // TODO: link previous also
+            let ii = (i + 1) % n;
+            let v2 = indices[ii];
+            let mut id = 0;
+            if is_new[i] {id += 1;}
+            if is_new[ii] {id += 2;}
+
+            if (id == 3) && (self.vertices[v2].outgoing_half_edge.is_unset()) {id += 1} // id == 4
+
+            if id > 0 { // at least one of the halfedge pairs is new
+                // link outer edges
+                let mut outer_prev = HalfEdgeIndex::unset();
+                let mut outer_next = HalfEdgeIndex::unset();
+                match id {
+                    1 => { // first is new, second is old
+                        outer_prev = self.edges[edges[ii]].previous_edge;
+                        outer_next = HalfEdgeCollection::edge_pair_index(edges[i]);
+                    },
+                    2 => { // second is new, first is old
+                        outer_prev = HalfEdgeCollection::edge_pair_index(edges[ii]);
+                        outer_next = self.edges[edges[i]].next_edge;
+                    },
+                    3 => { // both are new
+                        outer_prev = HalfEdgeCollection::edge_pair_index(edges[ii]);
+                        outer_next = HalfEdgeCollection::edge_pair_index(edges[i]);
+                    }
+                    4 => { // both are new (non-manifold vertex)
+                        outer_prev = self.edges[self.vertices[v2].outgoing_half_edge].previous_edge;
+                        outer_next = HalfEdgeCollection::edge_pair_index(edges[i]);
+                        self.edges[outer_prev].next_edge = outer_next;
+                        self.edges[outer_next].previous_edge = outer_prev;
+
+                        outer_prev = HalfEdgeCollection::edge_pair_index(edges[ii]);
+                        outer_next = self.vertices[v2].outgoing_half_edge;
+                    },
+                    _ => return unset
+                };
+
+                // outer_prev/next should now be set, so store links
+                if (!outer_next.is_unset()) && (!outer_prev.is_unset()) {
+                    self.edges[outer_prev].next_edge = outer_next;
+                    self.edges[outer_next].previous_edge = outer_prev;
+                }
+
+                // link inner halfedges
+                self.edges[edges[i]].next_edge = edges[ii];
+                self.edges[edges[ii]].previous_edge = edges[i];
+
+                // ensure vertex->outgoing is boundary if vertex is boundary
+                if is_new[i] {
+                    let mut outgoing = edges[i];
+                    outgoing.increment();
+                    self.vertices[v2].outgoing_half_edge = outgoing;
+                }
+            }
+
+            else { // both old
+                unimplemented!();
+            }
         }
 
         // Add face

@@ -88,6 +88,26 @@ pub mod edge_tests {
 
         assert_eq!(mesh.find_end_vertex_index(HalfEdgeIndex::new(5)), v2);
     }
+
+    #[test]
+    fn can_find_vertex_circulator() {
+        // Arrange
+        let mut mesh = Mesh::new();
+        let v0 = mesh.add_vertex_position(Point::new());
+        let v1 = mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
+        let v2 = mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
+        mesh.add_face_by_indices(vec![v0, v1, v2]);
+
+        // Act
+        println!("mesh for can_find_vertex_circulator is : {:#?}", mesh);
+        match mesh.get_vertex_circulator(v0) {
+            None => panic!("No vertex circulator found for v0!"),
+            Some(circulator) => {
+                println!("Circulator is {:#?}" ,circulator);
+                assert_eq!(circulator.len(), 2);
+            }
+        }
+    }
 }
 
 #[cfg(test)]
@@ -98,13 +118,13 @@ pub mod face_tests {
     fn face_adding() {
         // Arrange
         let mut mesh = Mesh::new();
-        mesh.add_vertex_position(Point::new());
-        mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
-        mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
-        mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
+        let v0 = mesh.add_vertex_position(Point::new());
+        let v1 = mesh.add_vertex_position(Point::from_values(2.0, 0.0, 0.0));
+        let v2 = mesh.add_vertex_position(Point::from_values(2.0, 2.0, 0.0));
+        let v3 = mesh.add_vertex_position(Point::from_values(0.0, 2.0, 0.0));
 
         // Act
-        let f_index = mesh.add_face_by_indices(vec![VertexIndex::new(0), VertexIndex::new(1), VertexIndex::new(2), VertexIndex::new(3)]);
+        let f_index = mesh.add_face_by_indices(vec![v0, v1, v2, v3]);
 
         // Assert
         assert_eq!(FaceIndex::new(0), f_index);
@@ -135,7 +155,7 @@ pub mod face_tests {
 
         // Act
         let f0 = mesh.add_face_by_indices(vec![v0, v1, v2]);
-        let f1 = mesh.add_face_by_indices(vec![v2, v0, v3]);
+        let f1 = mesh.add_face_by_indices(vec![v2, v3, v0]);
 
         // Assert
         println!("f0 and f1: {:?}, {:?}", f0, f1);
